@@ -1,0 +1,17 @@
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    working_dir: /workspace
+    shm_size: 2gb
+    volumes:
+      - ./:/workspace
+    environment:
+      MAVEN_OPTS: -Dmaven.repo.local=/workspace/.m2
+    command: >
+      bash -lc
+      "mvn test
+      -Dheadless=true
+      -Dwebdriver.chrome.driver=/usr/local/bin/chromedriver"
