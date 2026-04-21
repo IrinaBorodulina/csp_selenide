@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Apr 21 17:19:07 GMT+07:00 2026
+${CI_API_V4_URL}/groups/${CI_PROJECT_NAMESPACE_ID}/-/packages/maven/.error=Could not transfer artifact io.netty\:netty-buffer\:pom\:4.1.87.Final from/to gitlab-pp-maven (${CI_API_V4_URL}/groups/${CI_PROJECT_NAMESPACE_ID}/-/packages/maven)\: Cannot access ${CI_API_V4_URL}/groups/${CI_PROJECT_NAMESPACE_ID}/-/packages/maven with type default using the available connector factories\: BasicRepositoryConnectorFactory
+@default-gitlab-pp-maven-${CI_API_V4_URL}/groups/${CI_PROJECT_NAMESPACE_ID}/-/packages/maven/.lastUpdated=1776766747216
+https\://repo.maven.apache.org/maven2/.lastUpdated=1776766747352
