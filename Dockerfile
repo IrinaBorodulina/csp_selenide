@@ -1,9 +1,10 @@
+FROM maven:3.9.9-eclipse-temurin-11 AS maven-runtime
+
 FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG CHROME_VERSION=114.0.5735.90-1
 ARG CHROMEDRIVER_VERSION=114.0.5735.90
-ARG MAVEN_VERSION=3.9.9
 
 ENV TZ=UTC
 ENV JAVA_HOME=/opt/java/openjdk
@@ -11,13 +12,17 @@ ENV MAVEN_HOME=/opt/maven
 ENV PATH=${JAVA_HOME}/bin:${MAVEN_HOME}/bin:/usr/local/bin:${PATH}
 ENV CHROME_BIN=/usr/bin/google-chrome
 ENV WEBDRIVER_CHROME_DRIVER=/usr/local/bin/chromedriver
+ENV CPROCSP_HOME=/opt/cprocsp
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    alien \
     bash \
     ca-certificates \
     curl \
     fonts-liberation \
     gnupg \
+    lsb-base \
+    lsb-core \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -58,22 +63,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /opt/java /opt/maven /tmp/chrome && \
-    curl -fsSL "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u442-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u442b06.tar.gz" \
-    | tar -xz -C /opt/java && \
-    mv /opt/java/jdk8u442-b06 /opt/java/openjdk && \
-    curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
-    | tar -xz -C /opt/maven --strip-components=1 && \
-    wget -q -O /tmp/chrome/google-chrome-stable.deb \
-      "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb" && \
+COPY docker/install-cryptopro.sh /usr/local/bin/install-cryptopro.sh
+COPY docker/import-cryptopro-materials.sh /usr/local/bin/import-cryptopro-materials.sh
+COPY docker/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+COPY src/main/resources/google-chrome-stable_114.0.5735.90-1_amd64.deb /tmp/browser/google-chrome-stable_114.0.5735.90-1_amd64.deb
+
+COPY --from=maven-runtime /opt/java/openjdk /opt/java/openjdk
+COPY --from=maven-runtime /usr/share/maven /opt/maven
+
+RUN mkdir -p /tmp/chrome && \
     apt-get update && \
-    apt-get install -y /tmp/chrome/google-chrome-stable.deb && \
-    wget -q -O /tmp/chrome/chromedriver.zip \
-      "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" && \
-    unzip /tmp/chrome/chromedriver.zip -d /usr/local/bin/ && \
-    chmod +x /usr/local/bin/chromedriver && \
-    rm -rf /tmp/chrome /var/lib/apt/lists/*
+    apt-get install -y /tmp/browser/google-chrome-stable_114.0.5735.90-1_amd64.deb && \
+    wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" && \
+    unzip -q /tmp/chromedriver.zip -d /tmp/chromedriver && \
+    install -m 0755 /tmp/chromedriver/chromedriver /usr/local/bin/chromedriver && \
+    chmod +x /usr/local/bin/install-cryptopro.sh /usr/local/bin/import-cryptopro-materials.sh /usr/local/bin/container-entrypoint.sh && \
+    rm -rf /tmp/chrome /tmp/browser /tmp/chromedriver /tmp/chromedriver.zip /var/lib/apt/lists/*
+
+COPY cryptopro/ /tmp/cryptopro/
+
+RUN /usr/local/bin/install-cryptopro.sh /tmp/cryptopro && rm -rf /tmp/cryptopro
 
 WORKDIR /workspace
 
+ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]
 CMD ["bash"]
